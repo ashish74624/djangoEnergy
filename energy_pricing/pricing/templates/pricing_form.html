@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Energy Pricing Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <h2>Energy Pricing Dashboard</h2>
+    
+    <!-- Real-time graph -->
+    <canvas id="priceChart"></canvas>
+
+    <!-- Controls for Supply, Demand, and Storage -->
+    <div>
+        <label>Supply: <span id="supplyValue">100</span></label>
+        <button onclick="updateVariable('supply', -10)">-</button>
+        <button onclick="updateVariable('supply', 10)">+</button>
+    </div>
+    <div>
+        <label>Demand: <span id="demandValue">100</span></label>
+        <button onclick="updateVariable('demand', -10)">-</button>
+        <button onclick="updateVariable('demand', 10)">+</button>
+    </div>
+    <div>
+        <label>Storage: <span id="storageValue">100</span></label>
+        <button onclick="updateVariable('storage', -10)">-</button>
+        <button onclick="updateVariable('storage', 10)">+</button>
+    </div>
+
+    <script>
+        // Initial settings
+        let supply = 100;
+        let demand = 100;
+        let storage = 100;
+
+        // Chart.js setup
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Energy Price (Rs.)',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: { display: true, title: { display: true, text: 'Time' } },
+                    y: { display: true, title: { display: true, text: 'Price (Rs.)' } }
+                }
+            }
+        });
+
+        // Update supply, demand, or storage and refresh price
+        function updateVariable(variable, change) {
+            if (variable === 'supply') {
+                supply += change;
+                document.getElementById('supplyValue').textContent = supply;
+            } else if (variable === 'demand') {
+                demand += change;
+                document.getElementById('demandValue').textContent = demand;
+            } else if (variable === 'storage') {
+                storage += change;
+                document.getElementById('storageValue').textContent = storage;
+            }
+
+            // Fetch new price and update chart
+            $.get('/update_price', {supply: supply, demand: demand, storage: storage}, function(data) {
+                const newPrice = data.price;
+                const currentTime = new Date().toLocaleTimeString();
+
+                priceChart.data.labels.push(currentTime);
+                priceChart.data.datasets[0].data.push(newPrice);
+                priceChart.update();
+            });
+        }
+
+        // Initialize with first price
+        $(document).ready(function() {
+            updateVariable('supply', 0);
+        });
+    </script>
+</body>
+</html>
